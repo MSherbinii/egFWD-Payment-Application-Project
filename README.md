@@ -1,6 +1,5 @@
-# egFWD-Payment-Application-Project
 
-Payment Gateway
+#Payment Gateway
 This project simulates a payment gateway system that processes card transactions. The system is built using C programming language and it consists of different layers to handle different tasks such as card data validation, terminal data validation, account validation and balance checking, and transaction saving and retrieval.
 
 Features
