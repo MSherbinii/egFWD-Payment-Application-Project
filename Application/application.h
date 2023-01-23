@@ -1,9 +1,14 @@
-#ifndef APP_H
-#define APP_H
-#include"../Server/server.h"
+#ifndef APPLICATION_H_
+#define APPLICATION_H_
+
+#include "../Card/card.h"
+#include "../Terminal/terminal.h"
+#include "../Server/server.h"
 #include "../STD_Types.h"
+#include "../Server/db.h"
+
+
 
 void appStart(void);
 
-
-#endif // APP_H
+#endif /* APPLICATION_H_ */

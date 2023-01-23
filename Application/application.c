@@ -1,82 +1,86 @@
 #include "application.h"
+extern uint32_t accountRef;
 void appStart(void) {
     ST_cardData_t cardData;
-    ST_terminalData_t termData;
-    ST_accountsDB_t accountReference;
-    ST_transaction_t transData;
+    ST_terminalData_t terminalData;
+    ST_transaction_t trans;
     EN_cardError_t cardError;
-    EN_terminalError_t termError;
-    EN_serverError_t serverError;
+    EN_terminalError_t terminalError;
     EN_transState_t transState;
 
-    // Get card holder name
+    // Get cardholder name
     cardError = getCardHolderName(&cardData);
     if (cardError != CARD_OK) {
-        printf("Declined: Invalid card holder name\n");
+        printf("Declined Invalid Card\n");
         return;
     }
 
     // Get card expiration date
     cardError = getCardExpiryDate(&cardData);
     if (cardError != CARD_OK) {
-        printf("Declined: Invalid card expiration date\n");
+        printf("Declined Expired Card\n");
         return;
     }
 
     // Get card PAN
     cardError = getCardPAN(&cardData);
     if (cardError != CARD_OK) {
-        printf("Declined: Invalid card PAN\n");
+        printf("Declined Invalid Card\n");
         return;
     }
 
     // Get transaction date
-    termError = getTransactionDate(&termData);
-    if (termError != TERMINAL_OK) {
-        printf("Declined: Invalid transaction date\n");
+    terminalError = getTransactionDate(&terminalData);
+    if (terminalError != TERMINAL_OK) {
+        printf("Declined Invalid Date\n");
         return;
     }
 
     // Check if card is expired
-    termError = isCardExpired(&cardData, &termData);
-    if (termError == EXPIRED_CARD) {
-        printf("Declined: Card expired\n");
+    terminalError = isCardExpired(&cardData, &terminalData);
+    if (terminalError != TERMINAL_OK) {
+        printf("Declined Card Expired\n");
         return;
     }
-
+    terminalError = setMaxAmount(&terminalData, 25000);
+    if (terminalError != TERMINAL_OK) {
+        printf("Declined Max Amount Value\n");
+        return;
+    }
     // Get transaction amount
-    termError = getTransactionAmount(&termData);
-    if (termError != TERMINAL_OK) {
-        printf("Declined: Invalid transaction amount\n");
-        return;
-    }
-    termError = setMaxAmount(&termData, 25000);
-    if (termError != TERMINAL_OK) {
-        printf("Declined: Failed to set max amount\n");
+    terminalError = getTransactionAmount(&terminalData);
+    if (terminalError != TERMINAL_OK) {
+        printf("Declined Invalid Amount\n");
         return;
     }
 
 // Check if transaction amount is below max amount
-    termError = isBelowMaxAmount(&termData);
-    if (termError == EXCEED_MAX_AMOUNT) {
-        printf("Declined: Amount exceeding limit\n");
+    terminalError = isBelowMaxAmount(&terminalData);
+    if (terminalError != TERMINAL_OK) {
+        printf("Declined Amount Exceeding Limit\n");
         return;
     }
-    transState = receiveTransactionData(&transData);
+
+    trans.cardHolderData = cardData;
+    trans.terminalData = terminalData;
+    saveTransaction(&trans);
+    transState = receiveTransactionData(&trans);
     if (transState == APPROVED) {
-        printf("Transaction data sent successfully\n");
+        printf("Transaction Complete\n");
+        //print account balance after transaction
+        printf("Account balance %.2f\n", accountsDB[accountRef].balance);
+    } else if (transState == DECLINED_INSUFFICIENT_FUND) {
+        printf("Declined Insufficient Funds\n");
+        return;
+    } else if (transState == DECLINED_STOLEN_CARD) {
+        printf("Declined Stolen Card\n");
+        return;
+    } else if (transState == FRAUD_CARD) {
+        printf("Declined Invalid Account\n");
+        return;
     } else {
-        printf("Error sending transaction data\n");
+        printf("Declined Internal Server Error\n");
         return;
     }
-
-
-// Save transaction and update balance
-    transData.cardHolderData = cardData;
-    transData.terminalData = termData;
-    transData.transState = APPROVED;
-    saveTransaction(&transData);
-    printf("Transaction complete\n");
     listSavedTransactions();
-    printf("Current balance: %.2f\n", accountReference.balance);
 }
